@@ -1677,5 +1677,62 @@ document.getElementById('inputBox').addEventListener('input',e=>livePreview(e.ta
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)&&document.getElementById('panel-convert').classList.contains('active'))doConvert();});
 
 </script>
+<!-- ===== 公司验证门禁 (卡卡省) ===== -->
+<div id="company-gate" role="dialog" aria-modal="true" aria-labelledby="cg-title">
+  <div class="cg-backdrop"></div>
+  <div class="cg-card">
+    <div class="cg-logo"><i class="fa-solid fa-shield-halved"></i></div>
+    <h1 id="cg-title" class="cg-title">访问验证</h1>
+    <p class="cg-sub">请输入贵公司的中文名称以继续使用本工具</p>
+    <form id="cg-form" class="cg-form" autocomplete="off">
+      <input id="cg-input" class="cg-input" type="text" placeholder="公司中文名称" aria-label="公司中文名称" />
+      <button id="cg-submit" class="cg-btn" type="submit">验证并进入</button>
+    </form>
+    <p id="cg-msg" class="cg-msg" role="alert"></p>
+  </div>
+</div>
+<style>
+  #company-gate{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;}
+  #company-gate .cg-backdrop{position:absolute;inset:0;background:rgba(8,10,14,0.96);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+  #company-gate .cg-card{position:relative;width:min(92vw,380px);background:#161a21;border:1px solid #2a303c;border-radius:16px;padding:32px 28px;box-shadow:0 24px 60px rgba(0,0,0,0.5);text-align:center;}
+  #company-gate .cg-logo{width:56px;height:56px;margin:0 auto 18px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(79,140,255,0.12);color:#4f8cff;font-size:24px;}
+  #company-gate .cg-title{margin:0 0 8px;font-size:20px;font-weight:700;color:#e8eaed;}
+  #company-gate .cg-sub{margin:0 0 22px;font-size:13px;line-height:1.6;color:#9aa3b2;}
+  #company-gate .cg-form{display:flex;flex-direction:column;gap:12px;}
+  #company-gate .cg-input{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:10px;border:1px solid #2a303c;background:#0f1115;color:#e8eaed;font-size:14px;outline:none;transition:border-color .2s;}
+  #company-gate .cg-input:focus{border-color:#4f8cff;}
+  #company-gate .cg-btn{padding:12px;border:none;border-radius:10px;background:#4f8cff;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s,transform .1s;}
+  #company-gate .cg-btn:hover{background:#5a9aff;}
+  #company-gate .cg-btn:active{transform:scale(0.98);}
+  #company-gate .cg-msg{min-height:18px;margin:14px 0 0;font-size:12.5px;color:#f0554d;}
+  html.cg-locked body > *:not(#company-gate){visibility:hidden;}
+  html.cg-locked{overflow:hidden;}
+</style>
+<script>
+(function(){
+  var COOKIE_NAME='kk_auth';
+  var COMPANY_NAME='卡卡省';
+  function getCookie(n){var m=document.cookie.match(new RegExp('(?:^|; )'+n+'=([^;]*)'));return m?decodeURIComponent(m[1]):'';}
+  function setCookie(n,v){var d=new Date(Date.now()+30*24*3600*1000);document.cookie=n+'='+encodeURIComponent(v)+';path=/;expires='+d.toUTCString()+';SameSite=Lax';}
+  var gate=document.getElementById('company-gate');
+  if(getCookie(COOKIE_NAME)==='1'){gate.parentNode.removeChild(gate);return;}
+  document.documentElement.classList.add('cg-locked');
+  function verify(){
+    var input=document.getElementById('cg-input');
+    var msg=document.getElementById('cg-msg');
+    if(input.value.trim()===COMPANY_NAME){
+      setCookie(COOKIE_NAME,'1');
+      if(gate.parentNode){gate.parentNode.removeChild(gate);}
+      document.documentElement.classList.remove('cg-locked');
+    }else{
+      msg.textContent='验证失败：公司名称不正确，请重新输入。';
+      input.value='';
+      input.focus();
+    }
+  }
+  document.getElementById('cg-form').addEventListener('submit',function(e){e.preventDefault();verify();});
+})();
+</script>
+
 </body>
 </html>

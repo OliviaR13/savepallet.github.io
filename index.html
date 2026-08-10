@@ -3,88 +3,158 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#221f1b">
+<meta name="theme-color" content="#16161c">
 <meta name="robots" content="noindex, nofollow">
 <meta name="description" content="派送组内部查询台：卡司信息、渠道资料与尺寸重量换算。">
 <title>派送组查询台 · 卡司 / 渠道 / 换算</title>
+<!-- 防闪烁：首屏前设置 data-theme（读取记忆，否则跟随系统） -->
+<script>
+  (function(){
+    try{
+      var t = localStorage.getItem('kk-theme');
+      if(t !== 'light' && t !== 'dark'){
+        t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', t);
+    }catch(e){ document.documentElement.setAttribute('data-theme', 'light'); }
+  })();
+</script>
+<script>if('scrollRestoration' in history){ history.scrollRestoration = 'manual'; }</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css">
 <style>
 /* ============================================================
    派送组查询台 / Delivery Ops Console
-   Design language: printed dispatch sheet. Warm paper surfaces,
-   ink text, one signal colour (deep teal), squared geometry,
-   mono numerals. Colour is reserved for status, never decoration.
+   设计体系升级（参考 houda-hd「Soft Structuralism」）
+   - 令牌化亮 / 暗双主题（data-theme，防闪烁 + localStorage 记忆）
+   - 单一强调色：houda 蓝 #2563eb
+   - Phosphor Icons + Plus Jakarta Sans
+   - 漫射阴影、克制几何、状态色仅用于状态
+   - 保留 taste-skill 纪律：无 pill、无 AI 紫、无 em-dash、形状一致
    ============================================================ */
 
 :root{
-  /* surfaces: warm paper, not clinical white */
-  --bg:         oklch(97.4% 0.004 95);
-  --surface:    oklch(100% 0 0);
-  --surface-2:  oklch(96.4% 0.005 95);
-  --surface-3:  oklch(93.2% 0.006 95);
-  --surface-4:  oklch(86% 0.008 95);
-  --sunken:     oklch(97.1% 0.004 95);
-  --sunken-err: oklch(96.6% 0.020 25);
-  --inverse-bg:   oklch(26% 0.010 95);
-  --inverse-text: oklch(97% 0.004 95);
-  --line:       oklch(87% 0.006 95);
-  --line-soft:  oklch(92.4% 0.005 95);
-  --grid-line:  oklch(0% 0 0 / 0.020);
-  --topbar-bg:  oklch(97.4% 0.004 95 / 0.86);
-  --backdrop:   oklch(88% 0.006 95 / 0.90);
-  --shadow-1:   0 6px 22px oklch(35% 0.02 95 / 0.13);
-  --shadow-2:   0 22px 64px oklch(35% 0.02 95 / 0.20);
+  /* surfaces: 银灰 / 纯白，浮空组件 */
+  --bg:         #f4f4f6;
+  --surface:    #ffffff;
+  --surface-2:  #f3f4f7;
+  --surface-3:  #eceef2;
+  --surface-4:  #dfe2e8;
+  --sunken:     #f7f8fa;
+  --sunken-err: #fdeceb;
+  --inverse-bg:   #16161c;
+  --inverse-text: #f4f4f6;
 
-  /* type: ink on paper */
-  --text:       oklch(23% 0.010 95);
-  --text-dim:   oklch(45% 0.010 95);
-  --text-faint: oklch(58% 0.010 95);
+  --line:       #e4e6eb;
+  --line-soft:  #eef0f3;
+  --grid-line:  rgba(0,0,0,0.035);
+  --topbar-bg:  rgba(244,244,246,0.82);
+  --backdrop:   rgba(225,227,232,0.90);
+  --shadow-1:   0 1px 2px rgba(16,24,40,0.04), 0 8px 24px rgba(16,24,40,0.06);
+  --shadow-2:   0 2px 4px rgba(16,24,40,0.05), 0 12px 32px rgba(16,24,40,0.10), 0 32px 72px rgba(16,24,40,0.08);
 
-  /* single accent: deep teal ink */
-  --accent:        oklch(47% 0.105 197);
-  --accent-strong: oklch(39% 0.110 198);
-  --accent-deep:   oklch(40% 0.110 198);
-  --accent-soft:   oklch(47% 0.105 197 / 0.09);
-  --accent-line:   oklch(47% 0.105 197 / 0.30);
-  --accent-ink:    oklch(99% 0.003 197);
+  /* type */
+  --text:       #1a1a1f;
+  --text-dim:   #5c5c66;
+  --text-faint: #9a9aa3;
+
+  /* single accent: houda blue */
+  --accent:        #2563eb;
+  --accent-strong: #1d4ed8;
+  --accent-deep:   #1e40af;
+  --accent-soft:   rgba(37,99,235,0.08);
+  --accent-line:   rgba(37,99,235,0.28);
+  --accent-ink:    #ffffff;
 
   /* semantic status only, never decoration */
-  --green:      oklch(46% 0.130 152);
-  --green-soft: oklch(46% 0.130 152 / 0.10);
-  --green-line: oklch(46% 0.130 152 / 0.28);
-  --amber:      oklch(52% 0.135 62);
-  --amber-soft: oklch(52% 0.135 62 / 0.11);
-  --amber-line: oklch(52% 0.135 62 / 0.30);
-  --red:        oklch(50% 0.195 26);
-  --red-soft:   oklch(50% 0.195 26 / 0.09);
-  --red-line:   oklch(50% 0.195 26 / 0.28);
+  --green:      #16a34a;
+  --green-soft: rgba(22,163,74,0.10);
+  --green-line: rgba(22,163,74,0.28);
+  --amber:      #b45309;
+  --amber-soft: rgba(180,83,9,0.10);
+  --amber-line: rgba(180,83,9,0.28);
+  --red:        #dc2626;
+  --red-soft:   rgba(220,38,38,0.08);
+  --red-line:   rgba(220,38,38,0.28);
 
   /* shape lock: squared instrument, no pills anywhere */
   --r-xxs:2px;
-  --r-xs: 3px;
-  --r-sm: 5px;
-  --r-md: 8px;
-  --r-lg: 10px;
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
 
   /* motion */
-  --dur-press: 90ms;
-  --dur-fast:  140ms;
-  --dur-base:  200ms;
-  --dur-slow:  280ms;
+  --dur-press: 120ms;
+  --dur-fast:  200ms;
+  --dur-base:  240ms;
+  --dur-slow:  360ms;
   --ease:      cubic-bezier(0.32, 0.72, 0, 1);
-  --ease-out:  cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.22, 0.61, 0.36, 1);
 
-  --font-ui: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+  --font-ui: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
              "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
+/* ── 暗色覆盖：所有同名词令牌重映射，选择器规则无需改动 ── */
+html[data-theme="dark"]{
+  --bg:         #0e0e12;
+  --surface:    #16161c;
+  --surface-2:  #1d1d25;
+  --surface-3:  #23232c;
+  --surface-4:  #2c2c36;
+  --sunken:     #131318;
+  --sunken-err: rgba(220,38,38,0.12);
+  --inverse-bg:   #f4f4f6;
+  --inverse-text: #16161c;
+
+  --line:       rgba(255,255,255,0.09);
+  --line-soft:  rgba(255,255,255,0.06);
+  --grid-line:  rgba(255,255,255,0.035);
+  --topbar-bg:  rgba(14,14,18,0.78);
+  --backdrop:   rgba(10,10,13,0.90);
+  --shadow-1:   0 1px 2px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.55);
+  --shadow-2:   0 2px 4px rgba(0,0,0,0.5), 0 12px 32px rgba(0,0,0,0.6), 0 32px 72px rgba(0,0,0,0.55);
+
+  --text:       #f4f4f6;
+  --text-dim:   #b6b6c0;
+  --text-faint: #76767f;
+
+  --accent:        #3b82f6;
+  --accent-strong: #2563eb;
+  --accent-deep:   #1d4ed8;
+  --accent-soft:   rgba(59,130,246,0.14);
+  --accent-line:   rgba(59,130,246,0.36);
+  --accent-ink:    #ffffff;
+
+  --green:      #22c55e;
+  --green-soft: rgba(34,197,94,0.14);
+  --green-line: rgba(34,197,94,0.30);
+  --amber:      #f59e0b;
+  --amber-soft: rgba(245,158,11,0.14);
+  --amber-line: rgba(245,158,11,0.30);
+  --red:        #f87171;
+  --red-soft:   rgba(248,113,113,0.14);
+  --red-line:   rgba(248,113,113,0.30);
+}
+
 *,*::before,*::after{ box-sizing:border-box; }
 
-html{ -webkit-text-size-adjust:100%; }
+html{
+  -webkit-text-size-adjust:100%;
+  /* 固定表头锚点偏移，避免移动端被顶栏遮挡 */
+  scroll-padding-top: 5.5rem;
+  /* iOS Safari 不可横向平移：clip 而非 hidden */
+  overflow-x:clip;
+  overscroll-behavior-x:none;
+  width:100%;
+  position:relative;
+}
 
 body{
   margin:0;
@@ -97,9 +167,11 @@ body{
   font-variant-numeric:tabular-nums;
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
+  overflow-x:clip;
+  overscroll-behavior-x:none;
 }
 
-/* faint instrument grid, 1px hairlines at very low alpha */
+/* faint instrument grid, hairlines at low alpha (theme-aware) */
 body::before{
   content:"";
   position:fixed;
@@ -157,7 +229,8 @@ mark{
   top:0;
   z-index:30;
   background:var(--topbar-bg);
-  backdrop-filter:blur(12px) saturate(140%);
+  backdrop-filter:blur(14px) saturate(150%);
+  -webkit-backdrop-filter:blur(14px) saturate(150%);
   border-bottom:1px solid var(--line);
 }
 .topbar::before{
@@ -173,7 +246,7 @@ mark{
   height:58px;
   display:flex;
   align-items:center;
-  gap:22px;
+  gap:18px;
 }
 
 .brand{ display:flex; align-items:center; gap:10px; flex-shrink:0; }
@@ -226,17 +299,41 @@ mark{
   white-space:nowrap;
   transition:color var(--dur-fast) var(--ease-out),
              background var(--dur-fast) var(--ease-out),
-             box-shadow var(--dur-fast) var(--ease-out);
+             box-shadow var(--dur-fast) var(--ease-out),
+             transform var(--dur-press) var(--ease-out);
 }
-.tab-btn i{ font-size:11.5px; }
+.tab-btn i{ font-size:14px; }
 .tab-btn:hover{ color:var(--text-dim); background:var(--surface-3); }
 .tab-btn:active{ transform:scale(0.98); }
 .tab-btn.active{
   color:var(--text);
   background:var(--surface);
-  box-shadow:0 1px 2px oklch(35% 0.02 95 / 0.12), inset 0 -2px 0 var(--accent);
+  box-shadow:0 1px 2px rgba(0,0,0,0.16), inset 0 -2px 0 var(--accent);
 }
 .tab-btn.active:hover{ background:var(--surface); }
+
+/* theme toggle (squared, consistent with instrument language) */
+.theme-toggle{
+  flex-shrink:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:34px; height:34px;
+  border:1px solid var(--line);
+  background:var(--surface);
+  color:var(--text-dim);
+  border-radius:var(--r-sm);
+  cursor:pointer;
+  font-size:17px;
+  -webkit-tap-highlight-color:transparent;
+  transition:color var(--dur-fast) var(--ease-out),
+             background var(--dur-fast) var(--ease-out),
+             border-color var(--dur-fast) var(--ease-out),
+             transform var(--dur-press) var(--ease-out);
+}
+.theme-toggle:hover{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
+.theme-toggle:active{ transform:scale(0.94); }
+.theme-toggle:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
 
 .topbar-meta{
   margin-left:auto;
@@ -324,7 +421,7 @@ mark{
   left:16px; top:50%;
   transform:translateY(-50%);
   color:var(--text-faint);
-  font-size:13px;
+  font-size:15px;
   pointer-events:none;
 }
 .clear-btn{
@@ -365,7 +462,8 @@ mark{
   cursor:pointer;
   transition:color var(--dur-fast) var(--ease-out),
              border-color var(--dur-fast) var(--ease-out),
-             background var(--dur-fast) var(--ease-out);
+             background var(--dur-fast) var(--ease-out),
+             transform var(--dur-press) var(--ease-out);
 }
 .filter-chip:hover{ color:var(--text-dim); border-color:var(--line); background:var(--surface-2); }
 .filter-chip:active{ transform:scale(0.97); }
@@ -497,9 +595,10 @@ mark{
   cursor:pointer;
   transition:color var(--dur-fast) var(--ease-out),
              border-color var(--dur-fast) var(--ease-out),
-             background var(--dur-fast) var(--ease-out);
+             background var(--dur-fast) var(--ease-out),
+             transform var(--dur-press) var(--ease-out);
 }
-.back-btn i{ font-size:11px; transition:transform var(--dur-fast) var(--ease-out); }
+.back-btn i{ font-size:13px; transition:transform var(--dur-fast) var(--ease-out); }
 .back-btn:hover{ color:var(--text); border-color:var(--line); background:var(--surface-2); }
 .back-btn:hover i{ transform:translateX(-2px); }
 .back-btn:active{ transform:scale(0.97); }
@@ -580,7 +679,8 @@ mark{
   text-transform:none;
   transition:color var(--dur-fast) var(--ease-out),
              border-color var(--dur-fast) var(--ease-out),
-             background var(--dur-fast) var(--ease-out);
+             background var(--dur-fast) var(--ease-out),
+             transform var(--dur-press) var(--ease-out);
 }
 .copy-btn:hover{ color:var(--text); border-color:var(--line); background:var(--surface-2); }
 .copy-btn:active{ transform:scale(0.94); }
@@ -601,6 +701,7 @@ mark{
   background:var(--surface);
   border:1px solid var(--line);
   border-radius:var(--r-lg);
+  box-shadow:var(--shadow-1);
 }
 .card-pad{ padding:18px; }
 .card-pad-sm{ padding:14px 16px; }
@@ -614,7 +715,7 @@ mark{
   border:1px solid var(--accent-line);
   background:var(--accent-soft);
   color:var(--accent);
-  font-size:12.5px;
+  font-size:14px;
 }
 .card-title{ font-size:14px; font-weight:600; letter-spacing:-0.01em; }
 .card-subtitle{ font-size:11.5px; color:var(--text-faint); margin-top:1px; }
@@ -694,7 +795,7 @@ mark{
              transform var(--dur-press) var(--ease-out);
 }
 .btn:active{ transform:scale(0.975); }
-.btn i{ font-size:12px; }
+.btn i{ font-size:13px; }
 .btn-primary{
   background:var(--accent);
   border-color:var(--accent-deep);
@@ -753,6 +854,7 @@ mark{
 }
 .result-row:last-child{ margin-bottom:0; }
 .result-row.error{ border-color:var(--red-line); background:var(--sunken-err); }
+.result-row.warning{ border-color:var(--amber-line); background:var(--amber-soft); }
 
 .row-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .row-label{ display:flex; align-items:center; gap:9px; min-width:0; }
@@ -825,10 +927,10 @@ mark{
   line-height:1.5;
 }
 .over-banner{ background:var(--red-soft); border:1px solid var(--red-line); }
-.over-banner-icon{ color:var(--red); font-size:12px; margin-top:2px; flex-shrink:0; }
+.over-banner-icon{ color:var(--red); font-size:13px; margin-top:2px; flex-shrink:0; }
 .over-banner-text{ color:var(--red); font-weight:500; }
 .warn-banner{ background:var(--amber-soft); border:1px solid var(--amber-line); }
-.warn-banner-icon{ color:var(--amber); font-size:12px; margin-top:2px; flex-shrink:0; }
+.warn-banner-icon{ color:var(--amber); font-size:13px; margin-top:2px; flex-shrink:0; }
 .warn-banner-text{ color:var(--amber); font-weight:500; }
 
 .summary-chip{
@@ -844,7 +946,7 @@ mark{
   background:var(--surface-2);
   color:var(--text-dim);
 }
-.summary-chip i{ font-size:10px; color:var(--text-faint); }
+.summary-chip i{ font-size:11px; color:var(--text-faint); }
 .summary-chip.blue{ color:var(--text); border-color:var(--line); }
 .summary-chip.blue i{ color:var(--accent); }
 .summary-chip.orange{ color:var(--amber); border-color:var(--amber-line); background:var(--amber-soft); }
@@ -901,6 +1003,7 @@ mark{
   .topbar-meta{ margin-left:0; order:2; }
   .tabs{ order:3; width:100%; overflow-x:auto; }
   .tab-btn{ flex:1; justify-content:center; }
+  .theme-toggle{ order:1; margin-left:auto; }
   .stage{ padding:16px 16px 32px; }
 }
 
@@ -917,6 +1020,7 @@ mark{
     animation-duration:0.01ms !important;
     animation-iteration-count:1 !important;
     transition-duration:0.01ms !important;
+    scroll-behavior:auto !important;
   }
 }
 /* ============================================================
@@ -1052,7 +1156,7 @@ html.cg-locked, html.cg-locked body{ overflow:hidden; }
 <div id="company-gate" role="dialog" aria-modal="true" aria-labelledby="cg-title">
   <div class="cg-backdrop"></div>
   <div class="cg-card">
-    <div class="cg-logo"><i class="fa-solid fa-shield-halved"></i></div>
+    <div class="cg-logo"><i class="ph ph-shield-check"></i></div>
     <h1 id="cg-title" class="cg-title">访问验证</h1>
     <p class="cg-sub">本工具仅供内部派送组使用。请输入贵公司的中文名称以继续。</p>
     <form id="cg-form" class="cg-form" autocomplete="off">
@@ -1078,15 +1182,19 @@ html.cg-locked, html.cg-locked body{ overflow:hidden; }
 
       <nav class="tabs" role="tablist" aria-label="功能切换">
         <button class="tab-btn active" id="tab-carrier" data-tab="carrier" role="tab" aria-selected="true" aria-controls="panel-carrier">
-          <i class="fa-solid fa-truck-fast" aria-hidden="true"></i><span>卡司查询</span>
+          <i class="ph-bold ph-truck" aria-hidden="true"></i><span>卡司查询</span>
         </button>
         <button class="tab-btn" id="tab-channel" data-tab="channel" role="tab" aria-selected="false" aria-controls="panel-channel">
-          <i class="fa-solid fa-diagram-project" aria-hidden="true"></i><span>渠道资料</span>
+          <i class="ph-bold ph-sitemap" aria-hidden="true"></i><span>渠道资料</span>
         </button>
         <button class="tab-btn" id="tab-convert" data-tab="convert" role="tab" aria-selected="false" aria-controls="panel-convert">
-          <i class="fa-solid fa-ruler-combined" aria-hidden="true"></i><span>尺寸重量</span>
+          <i class="ph-bold ph-ruler" aria-hidden="true"></i><span>尺寸重量</span>
         </button>
       </nav>
+
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换亮 / 暗主题" title="切换亮 / 暗主题">
+        <i class="ph-bold ph-moon"></i>
+      </button>
 
       <div class="topbar-meta">
         <span class="stat"><b id="stat-carrier">0</b> 承运商</span>
@@ -1112,7 +1220,7 @@ html.cg-locked, html.cg-locked body{ overflow:hidden; }
 
           <div class="card card-pad">
             <div class="card-header">
-              <div class="card-icon"><i class="fa-solid fa-paste" aria-hidden="true"></i></div>
+              <div class="card-icon"><i class="ph ph-clipboard-text" aria-hidden="true"></i></div>
               <div>
                 <div class="card-title">粘贴原始数据</div>
                 <div class="card-subtitle">每行一条，自动解析</div>
@@ -1140,19 +1248,19 @@ html.cg-locked, html.cg-locked body{ overflow:hidden; }
 
             <div class="conv-actions">
               <button class="btn btn-primary btn-flex" onclick="doConvert()">
-                <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> 立即换算
+                <i class="ph ph-arrows-clockwise" aria-hidden="true"></i> 立即换算
               </button>
               <button class="btn btn-secondary btn-sm" onclick="clearAll()">
-                <i class="fa-solid fa-trash-can" aria-hidden="true"></i> 清空
+                <i class="ph ph-trash" aria-hidden="true"></i> 清空
               </button>
               <button class="btn btn-secondary btn-sm" onclick="pasteDemo()">
-                <i class="fa-solid fa-flask" aria-hidden="true"></i> 示例
+                <i class="ph ph-flask" aria-hidden="true"></i> 示例
               </button>
             </div>
           </div>
 
           <div class="card card-pad-sm" id="previewCard" style="display:none;">
-            <div class="hint-label"><i class="fa-solid fa-eye" style="margin-right:5px;" aria-hidden="true"></i>识别预览</div>
+            <div class="hint-label"><i class="ph ph-eye" style="margin-right:5px;" aria-hidden="true"></i>识别预览</div>
             <div id="previewContent"></div>
           </div>
         </div>
@@ -1161,16 +1269,16 @@ html.cg-locked, html.cg-locked body{ overflow:hidden; }
           <div class="card card-pad" style="min-height:220px;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;">
               <div class="card-header" style="margin-bottom:0;">
-                <div class="card-icon"><i class="fa-solid fa-check-double" aria-hidden="true"></i></div>
+                <div class="card-icon"><i class="ph ph-seal-check" aria-hidden="true"></i></div>
                 <div class="card-title">换算结果</div>
               </div>
               <button class="btn btn-secondary btn-sm" id="copyAllBtn" onclick="copyAll()" style="display:none;">
-                <i class="fa-regular fa-copy" aria-hidden="true"></i> 复制全部
+                <i class="ph ph-copy" aria-hidden="true"></i> 复制全部
               </button>
             </div>
             <div id="resultArea">
               <div class="empty">
-                <i class="fa-solid fa-box-open" aria-hidden="true"></i>
+                <i class="ph ph-package" aria-hidden="true"></i>
                 <div class="empty-title">暂无结果</div>
                 <div class="empty-desc">粘贴数据后点击「立即换算」</div>
               </div>
@@ -1329,9 +1437,9 @@ class LookupTab{
     const panel = document.getElementById('panel-' + this.id);
     panel.innerHTML = `
       <div class="search-box">
-        <i class="fa-solid fa-magnifying-glass icon-search"></i>
+        <i class="ph ph-magnifying-glass icon-search"></i>
         <input type="text" id="search-${this.id}" placeholder="输入名称搜索..." autocomplete="off">
-        <button class="clear-btn" id="clear-${this.id}"><i class="fa-solid fa-circle-xmark"></i></button>
+        <button class="clear-btn" id="clear-${this.id}"><i class="ph ph-x-circle"></i></button>
       </div>
       <div class="filter-row" id="filter-${this.id}"></div>
       <div class="result-meta"><span id="count-${this.id}"></span><span></span></div>
@@ -1464,7 +1572,7 @@ class LookupTab{
       const div = document.createElement('div');
       div.className = 'empty-state';
       div.id = 'empty-' + this.id;
-      div.innerHTML = '<i class="fa-solid fa-inbox"></i>没有匹配的结果';
+      div.innerHTML = '<i class="ph ph-inbox"></i>没有匹配的结果';
       this.listPanel.insertAdjacentElement('afterend', div);
     }
   }
@@ -1510,14 +1618,14 @@ class LookupTab{
       fieldsHtml += `<div class="${classes.join(' ')}">
         <div class="field-label">
           <span>${escapeHtml(cfg.label)}</span>
-          ${cfg.copy && !isEmpty ? `<button class="copy-btn" data-copy="${encodeURIComponent(raw)}"><i class="fa-regular fa-copy"></i>复制</button>` : ''}
+          ${cfg.copy && !isEmpty ? `<button class="copy-btn" data-copy="${encodeURIComponent(raw)}"><i class="ph ph-copy"></i>复制</button>` : ''}
         </div>
         <div class="field-value ${isEmpty?'empty':''}">${isEmpty ? '未登记' : linkify(raw).replace(/\n/g,'<br>')}</div>
       </div>`;
     });
 
     this.cardEl.innerHTML = `
-      <div class="back-row"><button class="back-btn"><i class="fa-solid fa-arrow-left"></i>返回列表</button></div>
+      <div class="back-row"><button class="back-btn"><i class="ph ph-arrow-left"></i>返回列表</button></div>
       <div class="card-head">
         <div>
           <h2>${escapeHtml(name)}</h2>
@@ -1537,7 +1645,7 @@ class LookupTab{
         navigator.clipboard.writeText(text).then(() => {
           const original = btn.innerHTML;
           btn.classList.add('copied');
-          btn.innerHTML = '<i class="fa-solid fa-check"></i>已复制';
+          btn.innerHTML = '<i class="ph ph-check"></i>已复制';
           setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = original; }, 1400);
         });
       });
@@ -1737,21 +1845,21 @@ function livePreview(text){
     card.style.display='block';
 
     const modeBadge=blockMode
-      ? `<span class="mode-badge block"><i class="fa-solid fa-cubes"></i> 货物块模式 · 识别到 ${parsed.length} 件货物</span>`
-      : `<span class="mode-badge line"><i class="fa-solid fa-list"></i> 逐行模式</span>`;
+      ? `<span class="mode-badge block"><i class="ph ph-cubes"></i> 货物块模式 · 识别到 ${parsed.length} 件货物</span>`
+      : `<span class="mode-badge line"><i class="ph ph-list"></i> 逐行模式</span>`;
 
     const frag=parsed.map(p=>{
-      if(p.error) return`<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;"><span class="tag tag-err"><i class="fa-solid fa-xmark"></i> 失败</span><span class="mono" style="color:var(--text-faint);font-size:12px;">${esc(p.raw)}</span></div>`;
+      if(p.error) return`<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;"><span class="tag tag-err"><i class="ph ph-x"></i> 失败</span><span class="mono" style="color:var(--text-faint);font-size:12px;">${esc(p.raw)}</span></div>`;
       let pills='';
-      if(p.dims) pills+=`<span class="parse-pill"><i class="fa-solid fa-cube" style="color:var(--text-faint);font-size:10px;"></i>${p.dims.map(d=>d.val+' '+d.unit).join(' × ')}</span>`;
+      if(p.dims) pills+=`<span class="parse-pill"><i class="ph ph-cube" style="color:var(--text-faint);font-size:10px;"></i>${p.dims.map(d=>d.val+' '+d.unit).join(' × ')}</span>`;
       if(p.weight){
         const lbVal=toLb(p.weight.val,p.weight.unit);
         const pc=p.palletCount||1;
         const perPalletLb=lbVal/pc;
         const overLimit=perPalletLb>2000;
-        pills+=`<span class="parse-pill" style="${overLimit?'border-color:rgba(240,85,77,0.3);color:var(--red);':''}"><i class="fa-solid fa-weight-hanging" style="color:${overLimit?'var(--red)':'var(--text-faint)'};font-size:10px;"></i>${p.weight.val} ${p.weight.unit}${pc>1?` ÷ ${pc}托`:''}${overLimit?' ⚠':''}</span>`;
+        pills+=`<span class="parse-pill" style="${overLimit?'border-color:rgba(240,85,77,0.3);color:var(--red);':''}"><i class="ph ph-scales" style="color:${overLimit?'var(--red)':'var(--text-faint)'};font-size:10px;"></i>${p.weight.val} ${p.weight.unit}${pc>1?` ÷ ${pc}托`:''}${overLimit?' ⚠':''}</span>`;
       }
-      return`<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:5px;"><span class="tag tag-ok"><i class="fa-solid fa-check"></i></span>${pills}<span class="mono" style="color:var(--text-dim);font-size:11px;">${esc(p.raw.length>36?p.raw.slice(0,36)+'…':p.raw)}</span></div>`;
+      return`<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:5px;"><span class="tag tag-ok"><i class="ph ph-check"></i></span>${pills}<span class="mono" style="color:var(--text-dim);font-size:11px;">${esc(p.raw.length>36?p.raw.slice(0,36)+'…':p.raw)}</span></div>`;
     }).join('');
     content.innerHTML=modeBadge+frag;
   },300);
@@ -1781,7 +1889,7 @@ function doConvert(){
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <span class="tag tag-err"><i class="fa-solid fa-triangle-exclamation"></i> 第${r.idx}条</span>
+        <span class="tag tag-err"><i class="ph ph-warning"></i> 第${r.idx}条</span>
         <span style="font-size:12px;color:var(--red);">${r.error}</span>
       </div>`;
       frag.appendChild(row);
@@ -1821,18 +1929,18 @@ function doConvert(){
     if(wtOverLimit){
       const palletInfo=palletCount>1?`（总 ${fmt(lbVal)} lb ÷ ${palletCount} 托）`:'';
       banner=`<div class="over-banner">
-        <i class="fa-solid fa-circle-exclamation over-banner-icon"></i>
+        <i class="ph ph-warning-circle over-banner-icon"></i>
         <span class="over-banner-text">单托重量 ${fmt(perPalletLb)} lb 超过 2000 lb 上限${palletInfo}，需增加托盘或减重</span>
       </div>`;
     } else if(wtNearLimit){
       const palletInfo=palletCount>1?`（总 ${fmt(lbVal)} lb ÷ ${palletCount} 托）`:'';
       banner=`<div class="warn-banner">
-        <i class="fa-solid fa-triangle-exclamation warn-banner-icon"></i>
+        <i class="ph ph-warning warn-banner-icon"></i>
         <span class="warn-banner-text">单托重量 ${fmt(perPalletLb)} lb 接近 2000 lb 上限${palletInfo}（已超 90%）</span>
       </div>`;
     } else if(dimWarn){
       banner=`<div class="warn-banner">
-        <i class="fa-solid fa-triangle-exclamation warn-banner-icon"></i>
+        <i class="ph ph-warning warn-banner-icon"></i>
         <span class="warn-banner-text">${dimWarnMsgs.join(' / ')}，超过 96 in 限长</span>
       </div>`;
     }
@@ -1847,17 +1955,17 @@ function doConvert(){
           <div class="row-num ${numClass}">${r.idx}</div>
           <span class="row-raw">${esc(r.raw.length>42?r.raw.slice(0,42)+'…':r.raw)}</span>
         </div>
-        <button class="copy-btn" onclick="copyRow(this)" title="复制"><i class="fa-regular fa-copy"></i></button>
+        <button class="copy-btn" onclick="copyRow(this)" title="复制"><i class="ph ph-copy"></i></button>
       </div>
       ${banner}
       <div class="row-grid ${cols}">
         ${dimOut?`<div>
-          <div class="row-field-label"><i class="fa-solid fa-cube" style="color:${dimWarn?'var(--amber)':'var(--accent)'};font-size:10px;"></i>体积尺寸</div>
+          <div class="row-field-label"><i class="ph ph-cube" style="color:${dimWarn?'var(--amber)':'var(--accent)'};font-size:10px;"></i>体积尺寸</div>
           <div class="row-field-value ${dimValClass}">${dimOut}</div>
           ${dimOrig?`<div class="row-field-orig">原始: ${esc(dimOrig)}</div>`:''}
         </div>`:''}
         ${wtOut?`<div>
-          <div class="row-field-label"><i class="fa-solid fa-weight-hanging" style="color:${wtOverLimit?'var(--red)':(wtNearLimit?'var(--amber)':'var(--accent)')};font-size:10px;"></i>重量 ${wtOverLimit?'⚠':''}</div>
+          <div class="row-field-label"><i class="ph ph-scales" style="color:${wtOverLimit?'var(--red)':(wtNearLimit?'var(--amber)':'var(--accent)')};font-size:10px;"></i>重量 ${wtOverLimit?'⚠':''}</div>
           <div class="row-field-value ${valClass}">${wtOut}</div>
           ${wtOrig?`<div class="row-field-orig">原始: ${esc(wtOrig)}</div>`:''}
         </div>`:''}
@@ -1879,10 +1987,10 @@ function buildSummary(results){
   sc.style.display='block';
   const withDim=results.filter(r=>r.dims);
   const withWt=results.filter(r=>r.weight);
-  let chips=`<div class="summary-chip"><i class="fa-solid fa-boxes-stacked"></i> 共 ${results.length} 条</div>`;
+  let chips=`<div class="summary-chip"><i class="ph ph-stack"></i> 共 ${results.length} 条</div>`;
   if(withDim.length){
     const v=withDim.reduce((s,r)=>{const iv=r.dims.map(d=>toIn(d.val,d.unit));return s+iv[0]*iv[1]*iv[2];},0);
-    chips+=`<div class="summary-chip blue"><i class="fa-solid fa-cube"></i> 总体积 ${fmt(v)} in³</div>`;
+    chips+=`<div class="summary-chip blue"><i class="ph ph-cube"></i> 总体积 ${fmt(v)} in³</div>`;
   }
   if(withWt.length){
     const w=withWt.reduce((s,r)=>s+toLb(r.weight.val,r.weight.unit),0);
@@ -1897,12 +2005,12 @@ function buildSummary(results){
       const per=lb/pc;
       return per<=2000&&per>1800;
     }).length;
-    chips+=`<div class="summary-chip orange"><i class="fa-solid fa-weight-hanging"></i> 总重量 ${fmt(w)} lb</div>`;
+    chips+=`<div class="summary-chip orange"><i class="ph ph-scales"></i> 总重量 ${fmt(w)} lb</div>`;
     if(overCount>0){
-      chips+=`<div class="summary-chip red"><i class="fa-solid fa-circle-exclamation"></i> ${overCount} 件单托超限 (>2000lb)</div>`;
+      chips+=`<div class="summary-chip red"><i class="ph ph-warning-circle"></i> ${overCount} 件单托超限 (>2000lb)</div>`;
     }
     if(nearCount>0){
-      chips+=`<div class="summary-chip orange"><i class="fa-solid fa-triangle-exclamation"></i> ${nearCount} 件单托接近上限</div>`;
+      chips+=`<div class="summary-chip orange"><i class="ph ph-warning"></i> ${nearCount} 件单托接近上限</div>`;
     }
   }
   sn.innerHTML=chips;
@@ -1925,7 +2033,7 @@ function copyAll(){
 
 function clearAll(){
   document.getElementById('inputBox').value='';
-  document.getElementById('resultArea').innerHTML='<div class="empty"><i class="fa-solid fa-box-open"></i><div class="empty-title">暂无结果</div><div class="empty-desc">粘贴数据后点击「立即换算」</div></div>';
+  document.getElementById('resultArea').innerHTML='<div class="empty"><i class="ph ph-package"></i><div class="empty-title">暂无结果</div><div class="empty-desc">粘贴数据后点击「立即换算」</div></div>';
   document.getElementById('copyAllBtn').style.display='none';
   document.getElementById('summaryCard').style.display='none';
   document.getElementById('previewCard').style.display='none';
@@ -1985,7 +2093,7 @@ NMFC Sub	5`;
 }
 function showToast(msg,type='ok'){
   const t=document.getElementById('toast');
-  t.innerHTML=`<i class="fa-solid fa-${type==='warn'?'triangle-exclamation':'check'}" style="margin-right:5px;"></i>${msg}`;
+  t.innerHTML=`<i class="ph ph-${type==='warn'?'warning':'check'}" style="margin-right:5px;"></i>${msg}`;
   t.classList.add('show');clearTimeout(t._t);
   t._t=setTimeout(()=>t.classList.remove('show'),2000);
 }
@@ -2051,6 +2159,26 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKe
     }
   }
   document.getElementById('cg-form').addEventListener('submit',function(e){e.preventDefault();verify();});
+})();
+</script>
+
+<script>
+(function(){
+  var t = document.getElementById('themeToggle');
+  if(!t) return;
+  function syncIcon(){
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var ic = t.querySelector('i');
+    if(ic) ic.className = dark ? 'ph-bold ph-sun' : 'ph-bold ph-moon';
+  }
+  t.addEventListener('click', function(){
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var next = dark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try{ localStorage.setItem('kk-theme', next); }catch(e){}
+    syncIcon();
+  });
+  syncIcon();
 })();
 </script>
 

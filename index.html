@@ -251,8 +251,10 @@ mark{
 
 .brand{ display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .brand-mark{
-  width:30px; height:30px;
-  display:grid; place-items:center;
+  display:inline-flex;
+  align-items:center;
+  height:30px;
+  padding:0 9px;
   border:1px solid var(--accent-line);
   background:var(--accent-soft);
   border-radius:var(--r-sm);
@@ -260,7 +262,8 @@ mark{
   font-family:var(--font-mono);
   font-size:12px;
   font-weight:700;
-  letter-spacing:-0.02em;
+  letter-spacing:-0.01em;
+  white-space:nowrap;
 }
 .brand-text{ display:flex; flex-direction:column; line-height:1.15; }
 .brand-name{ font-size:14px; font-weight:600; letter-spacing:-0.01em; }
@@ -1173,7 +1176,7 @@ html.cg-locked, html.cg-locked body{ overflow:hidden; }
   <header class="topbar">
     <div class="topbar-in">
       <div class="brand">
-        <span class="brand-mark" aria-hidden="true">KK</span>
+        <span class="brand-mark" aria-hidden="true">Savepallet</span>
         <span class="brand-text">
           <span class="brand-name">派送组查询台</span>
           <span class="brand-meta">Delivery Ops Console</span>

@@ -692,6 +692,8 @@ mark{
 .d-copy.copied{ color:var(--green); opacity:1; }
 
 .d-field-value{ font-size:13.5px; line-height:1.7; color:var(--text); word-break:break-word; }
+.mail-line{ display:block; padding:2px 0; }
+.mail-label{ color:var(--text-faint); margin-right:6px; font-size:12.5px; }
 .d-field-value .val-link{
   color:var(--accent); text-decoration:none;
   border-bottom:1px solid var(--accent-line); padding-bottom:1px;
@@ -1399,6 +1401,28 @@ function linkify(text){
     return '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>' + trailing;
   });
 }
+// 联系邮件：把“标签 + 邮箱”逐对拆成独立一行，邮箱可点（mailto:）
+const EMAIL_RE = /[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/g;
+function renderContactEmails(raw){
+  const emails = raw.match(EMAIL_RE);
+  if(!emails || !emails.length){
+    return linkify(raw).replace(/\n/g, '<br>');
+  }
+  const parts = raw.split(EMAIL_RE);
+  const lines = [];
+  for(let i = 0; i < emails.length; i++){
+    let label = (parts[i] || '').replace(/\r/g, '');
+    const ls = label.split('\n').map(function(x){ return x.trim(); }).filter(Boolean);
+    label = ls.length ? ls[ls.length - 1] : '';
+    label = label.replace(/[：:、,;，<\s]+$/, '');
+    const line = '<span class="mail-line">' +
+      (label ? '<span class="mail-label">' + escapeHtml(label) + '</span> ' : '') +
+      '<a class="val-link" href="mailto:' + escapeHtml(emails[i]) + '">' + escapeHtml(emails[i]) + '</a>' +
+      '</span>';
+    lines.push(line);
+  }
+  return lines.join('');
+}
 // 给可点击字段（电话 / 邮箱）包裹 tel: / mailto: 链接，其余走普通 linkify
 function linkifyValue(raw, cfg){
   if(cfg.link === 'tel'){
@@ -1406,11 +1430,7 @@ function linkifyValue(raw, cfg){
     return '<a class="val-link" href="tel:' + digits + '">' + escapeHtml(raw) + '</a>';
   }
   if(cfg.link === 'mail'){
-    const emails = raw.split(/[;；,，\s]+/).map(s => s.trim()).filter(Boolean);
-    if(emails.length){
-      const toLink = e => '<a class="val-link" href="mailto:' + escapeHtml(e) + '">' + escapeHtml(e) + '</a>';
-      return emails.map(toLink).join(' · ');
-    }
+    return renderContactEmails(raw);
   }
   return linkify(raw).replace(/\n/g, '<br>');
 }

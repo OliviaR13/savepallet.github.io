@@ -692,8 +692,24 @@ mark{
 .d-copy.copied{ color:var(--green); opacity:1; }
 
 .d-field-value{ font-size:13.5px; line-height:1.7; color:var(--text); word-break:break-word; }
-.mail-line{ display:block; padding:2px 0; }
-.mail-label{ color:var(--text-faint); margin-right:6px; font-size:12.5px; }
+.contact-note{
+  font-size:12px;
+  line-height:1.6;
+  color:var(--text-dim);
+  margin:2px 0 7px;
+  padding-left:9px;
+  border-left:2px solid var(--line);
+}
+.contact-line{
+  display:block;
+  padding:2px 0;
+  line-height:1.7;
+}
+.contact-label{
+  color:var(--text-faint);
+  margin-right:7px;
+  font-size:12px;
+}
 .d-field-value .val-link{
   color:var(--accent); text-decoration:none;
   border-bottom:1px solid var(--accent-line); padding-bottom:1px;
@@ -1401,36 +1417,93 @@ function linkify(text){
     return '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>' + trailing;
   });
 }
-// 联系邮件：把“标签 + 邮箱”逐对拆成独立一行，邮箱可点（mailto:）
+// 联系信息（电话 / 邮箱 / 说明）通用排版：按行解析，说明文字保留并关联到对应联系方式
 const EMAIL_RE = /[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/g;
-function renderContactEmails(raw){
-  const emails = raw.match(EMAIL_RE);
-  if(!emails || !emails.length){
-    return linkify(raw).replace(/\n/g, '<br>');
+const PHONE_RE = /\(?\+?\d[\d\s.\-()]{5,}\d\)?/g;
+// 把一个“值”拆成多个独立号码；过短的段（如 /74/75 分机）回并到上一个号码
+function splitPhones(value){
+  const parts = value.split(/\s*[\/,，;；|]\s*/);
+  const merged = [];
+  for(const p of parts){
+    if(merged.length && p.replace(/[^\d]/g, '').length < 7){
+      merged[merged.length - 1] += '/' + p;
+    } else if(/\d/.test(p)){
+      merged.push(p);
+    }
   }
-  const parts = raw.split(EMAIL_RE);
-  const lines = [];
-  for(let i = 0; i < emails.length; i++){
-    let label = (parts[i] || '').replace(/\r/g, '');
-    const ls = label.split('\n').map(function(x){ return x.trim(); }).filter(Boolean);
-    label = ls.length ? ls[ls.length - 1] : '';
-    label = label.replace(/[：:、,;，<\s]+$/, '');
-    const line = '<span class="mail-line">' +
-      (label ? '<span class="mail-label">' + escapeHtml(label) + '</span> ' : '') +
-      '<a class="val-link" href="mailto:' + escapeHtml(emails[i]) + '">' + escapeHtml(emails[i]) + '</a>' +
-      '</span>';
-    lines.push(line);
-  }
-  return lines.join('');
+  return merged;
 }
-// 给可点击字段（电话 / 邮箱）包裹 tel: / mailto: 链接，其余走普通 linkify
-function linkifyValue(raw, cfg){
-  if(cfg.link === 'tel'){
-    const digits = raw.replace(/[^\d+]/g, '');
-    return '<a class="val-link" href="tel:' + digits + '">' + escapeHtml(raw) + '</a>';
+function renderContacts(raw){
+  const lines = raw.split(/\r?\n/);
+  const out = [];
+  let note = [];
+  function flushNote(){
+    if(note.length){
+      out.push('<div class="contact-note">' + note.join('<br>') + '</div>');
+      note = [];
+    }
   }
-  if(cfg.link === 'mail'){
-    return renderContactEmails(raw);
+  // 从同一段文字中提取邮箱前的“标签”（角色/部门），如「账号经理：xxx@x 客服：xxx@x」
+  function inlineEmailLabel(part){
+    let s = part.replace(/[:：\s]+$/, '').trim();
+    if(!s) return '';
+    const ci = Math.max(s.lastIndexOf('：'), s.lastIndexOf(':'));
+    if(ci === -1) return s;
+    let after = s.slice(ci + 1).trim();
+    // 如果冒号后像 URL 或很长，则取冒号前的角色词作为标签
+    if(after.length > 24 || /^https?:/.test(after) || /www\.|:\/\//.test(after)){
+      return s.slice(0, ci).trim();
+    }
+    // 抑制无意义前缀
+    const low = after.toLowerCase();
+    if(low === 'email' || low === 'e-mail' || low === 'mail' || low === '邮箱') return '';
+    return after;
+  }
+  for(let i = 0; i < lines.length; i++){
+    const t = lines[i].trim();
+    if(!t) continue;
+    const emails = t.match(EMAIL_RE);
+    if(emails && emails.length){
+      flushNote();
+      const parts = t.split(EMAIL_RE);
+      for(let j = 0; j < emails.length; j++){
+        const label = inlineEmailLabel(parts[j] || '');
+        out.push('<div class="contact-line">' +
+          (label ? '<span class="contact-label">' + escapeHtml(label) + '</span>' : '') +
+          '<a class="val-link" href="mailto:' + escapeHtml(emails[j]) + '">' + escapeHtml(emails[j]) + '</a></div>');
+      }
+      continue;
+    }
+    const phones = t.match(PHONE_RE);
+    if(phones && phones.length){
+      flushNote();
+      const ci = t.search(PHONE_RE);
+      let label = '';
+      const before = t.slice(0, ci).replace(/[:：\s]+$/, '');
+      if(before && !before.includes('@')) label = before;
+      const nums = splitPhones(t.slice(ci));
+      nums.forEach(function(ph, idx){
+        const digits = ph.replace(/[^\d+]/g, '');
+        out.push('<div class="contact-line"><span class="contact-label">' + escapeHtml(idx === 0 ? label : '') + '</span>' +
+          '<a class="val-link" href="tel:' + digits + '">' + escapeHtml(ph) + '</a></div>');
+      });
+      continue;
+    }
+    // 说明文字行：标签: 值（职位 / 姓名）或 纯文本（分区标题）
+    const ci2 = t.search(/[:：]/);
+    if(ci2 > 0 && ci2 < t.length - 1){
+      note.push(escapeHtml(t.slice(0, ci2).trim()) + '：' + escapeHtml(t.slice(ci2 + 1).trim()));
+    } else {
+      note.push(escapeHtml(t));
+    }
+  }
+  if(note.length) out.push('<div class="contact-note">' + note.join('<br>') + '</div>');
+  return out.join('');
+}
+// 给可点击字段（电话 / 邮箱）做按行结构化排版；其余走普通 linkify
+function linkifyValue(raw, cfg){
+  if(cfg.link === 'tel' || cfg.link === 'mail'){
+    return renderContacts(raw);
   }
   return linkify(raw).replace(/\n/g, '<br>');
 }

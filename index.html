@@ -696,6 +696,12 @@ mark{
   margin-right:7px;
   font-size:12px;
 }
+.cred-value{
+  font-family:var(--font-mono);
+  font-size:13px;
+  color:var(--text);
+  word-break:break-all;
+}
 .d-field-value .val-link{
   color:var(--accent); text-decoration:none;
   border-bottom:1px solid var(--accent-line); padding-bottom:1px;
@@ -1390,17 +1396,20 @@ function escapeHtml(str){
 }
 function linkify(text){
   const escaped = escapeHtml(text);
-  // Stop URL at whitespace and CJK characters (Chinese is not valid in raw URLs)
-  return escaped.replace(/(https?:\/\/[^\s\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]+)/g, function(match){
-    var url = match;
+  // 两类匹配：① 完整 http(s) 网址；② 裸域名（无协议前缀，自动补 https://）。
+  // 裸域名排除「@」前的部分，避免把邮箱的域名误当作网站链接。
+  const re = /(https?:\/\/[^\s\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]+)|(?:(?<![@A-Za-z0-9.])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]*)?)/g;
+  return escaped.replace(re, function(match, httpUrl){
+    var url = httpUrl ? httpUrl : match;
     var trailing = '';
-    // Trim trailing punctuation that is a separator, not part of the actual URL
+    // 去掉结尾的分隔标点（不属于真实网址）
     while(url.length > 0 && '-.,;:!?)]'.indexOf(url.charAt(url.length - 1)) !== -1){
       trailing = url.charAt(url.length - 1) + trailing;
       url = url.slice(0, -1);
     }
     if(!url) return match;
-    return '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>' + trailing;
+    var full = httpUrl ? url : 'https://' + url;
+    return '<a href="' + full + '" target="_blank" rel="noopener noreferrer">' + url + '</a>' + trailing;
   });
 }
 // 联系信息（电话 / 邮箱 / 说明）通用排版：按行解析，说明文字保留并关联到对应联系方式
@@ -1486,10 +1495,68 @@ function renderContacts(raw){
   if(note.length) out.push('<div class="contact-note">' + note.join('<br>') + '</div>');
   return out.join('');
 }
+// 凭证字段（账号密码 / 付款信息）：把账号、密码、网址等按「标签：值」拆成独立行
+const CRED_LABEL_RE = /(账号|账户|用户名|用户|密码|初始密码|重置密码|网址|站点|口令|账户名)\s*[：:]/g;
+function renderCredential(raw){
+  const lines = raw.split(/\r?\n/);
+  const out = [];
+  function emit(label, value){
+    const v = value.trim();
+    if(!v) return;
+    if(/网址|站点/.test(label)){
+      out.push('<div class="contact-line"><span class="contact-label">' + escapeHtml(label) + '</span>' + linkify(v) + '</div>');
+    } else {
+      out.push('<div class="contact-line"><span class="contact-label">' + escapeHtml(label) + '</span><span class="cred-value">' + escapeHtml(v) + '</span></div>');
+    }
+  }
+  for(let i = 0; i < lines.length; i++){
+    const t = lines[i].trim();
+    if(!t) continue;
+    // 本行内多个「标签：值」配对（如「用户名：x 密码：y 网址：z 账户：a 密码：b」）
+    CRED_LABEL_RE.lastIndex = 0;
+    const hits = [];
+    let m;
+    while((m = CRED_LABEL_RE.exec(t)) !== null){
+      hits.push({label: m[1], start: m.index, end: m.index + m[0].length});
+    }
+    if(hits.length){
+      for(let j = 0; j < hits.length; j++){
+        const start = hits[j].end;
+        const end = (j + 1 < hits.length) ? hits[j + 1].start : t.length;
+        emit(hits[j].label, t.slice(start, end));
+      }
+      continue;
+    }
+    // 无标签：邮箱 + 密码（单行），如 x@y.com p@ss
+    const em = t.match(/^([A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,})\s+(.+)$/);
+    if(em){
+      out.push('<div class="contact-line"><span class="contact-label">账号</span><a class="val-link" href="mailto:' + escapeHtml(em[1]) + '">' + escapeHtml(em[1]) + '</a></div>');
+      out.push('<div class="contact-line"><span class="contact-label">密码</span><span class="cred-value">' + escapeHtml(em[2].trim()) + '</span></div>');
+      continue;
+    }
+    // 无标签、无中文：英文「用户名 密码」如 XanderLiu Pmax1234
+    const ws = t.split(/\s+/);
+    if(ws.length >= 2 && !/[一-鿿]/.test(t)){
+      out.push('<div class="contact-line"><span class="contact-label">账号</span><span class="cred-value">' + escapeHtml(ws[0]) + '</span></div>');
+      out.push('<div class="contact-line"><span class="contact-label">密码</span><span class="cred-value">' + escapeHtml(ws.slice(1).join(' ')) + '</span></div>');
+      continue;
+    }
+    // 纯网址 / 纯文本（如「无直签账号」）
+    if(/^https?:\/\//.test(t) || /^www\./.test(t)){
+      out.push('<div class="contact-line">' + linkify(t) + '</div>');
+    } else {
+      out.push('<div class="contact-line">' + escapeHtml(t) + '</div>');
+    }
+  }
+  return out.join('');
+}
 // 给可点击字段（电话 / 邮箱）做按行结构化排版；其余走普通 linkify
 function linkifyValue(raw, cfg){
   if(cfg.link === 'tel' || cfg.link === 'mail'){
     return renderContacts(raw);
+  }
+  if(cfg.credential){
+    return renderCredential(raw);
   }
   return linkify(raw).replace(/\n/g, '<br>');
 }

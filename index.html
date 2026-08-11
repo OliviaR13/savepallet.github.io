@@ -50,7 +50,6 @@
 
   --line:       #e4e6eb;
   --line-soft:  #eef0f3;
-  --grid-line:  rgba(0,0,0,0.035);
   --topbar-bg:  rgba(244,244,246,0.82);
   --backdrop:   rgba(225,227,232,0.90);
   --shadow-1:   0 1px 2px rgba(16,24,40,0.04), 0 8px 24px rgba(16,24,40,0.06);
@@ -115,7 +114,6 @@ html[data-theme="dark"]{
 
   --line:       rgba(255,255,255,0.09);
   --line-soft:  rgba(255,255,255,0.06);
-  --grid-line:  rgba(255,255,255,0.035);
   --topbar-bg:  rgba(14,14,18,0.78);
   --backdrop:   rgba(10,10,13,0.90);
   --shadow-1:   0 1px 2px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.55);
@@ -169,18 +167,6 @@ body{
   text-rendering:optimizeLegibility;
   overflow-x:clip;
   overscroll-behavior-x:none;
-}
-
-/* faint instrument grid, hairlines at low alpha (theme-aware) */
-body::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  z-index:0;
-  background-image:
-    repeating-linear-gradient(to right, var(--grid-line) 0 1px, transparent 1px 64px),
-    repeating-linear-gradient(to bottom, var(--grid-line) 0 1px, transparent 1px 64px);
 }
 
 ::selection{ background:var(--accent-soft); color:var(--accent-strong); }

@@ -437,38 +437,32 @@ mark{
   gap:6px;
   margin-bottom:10px;
 }
-.sub-switch{
-  display:flex;
-  gap:6px;
-  margin-bottom:10px;
-  padding:3px;
-  background:var(--surface-2);
+/* 卡司详情内的「附加费用规则」子卡片：每条费用规则一个内嵌卡片 */
+.fee-card{
   border:1px solid var(--line-soft);
   border-radius:var(--r-md);
+  background:var(--surface-2);
+  overflow:hidden;
 }
-.sub-btn{
-  appearance:none;
-  flex:1;
-  background:transparent;
-  border:none;
-  border-radius:calc(var(--r-md) - 3px);
-  color:var(--text-faint);
-  font-family:inherit;
+.fee-card + .fee-card{
+  margin-top:10px;
+}
+.fee-card-title{
+  padding:10px 13px;
   font-size:13px;
-  font-weight:600;
-  height:30px;
-  padding:0 14px;
-  cursor:pointer;
-  transition:color var(--dur-fast) var(--ease-out),
-             background var(--dur-fast) var(--ease-out),
-             transform var(--dur-press) var(--ease-out);
+  font-weight:700;
+  color:var(--text-strong);
+  border-bottom:1px solid var(--line-soft);
+  background:var(--surface-3, var(--surface-2));
 }
-.sub-btn:hover{ color:var(--text-dim); }
-.sub-btn:active{ transform:scale(0.98); }
-.sub-btn.active{
-  color:var(--accent-strong);
-  background:var(--surface);
-  box-shadow:0 1px 2px rgba(15,23,42,0.08);
+.fee-card-body{
+  padding:4px 6px;
+}
+.fee-card-body .d-field{
+  border:none;
+}
+.fee-card-body .d-field + .d-field{
+  border-top:1px solid var(--line-soft);
 }
 .filter-chip{
   appearance:none;
@@ -1274,9 +1268,6 @@ html.cg-locked, html.cg-locked body{ overflow:hidden; }
         <button class="tab-btn" id="tab-convert" data-tab="convert" role="tab" aria-selected="false" aria-controls="panel-convert">
           <i class="ph-bold ph-ruler" aria-hidden="true"></i><span>尺寸重量</span>
         </button>
-        <button class="tab-btn" id="tab-limits" data-tab="limits" role="tab" aria-selected="false" aria-controls="panel-limits">
-          <i class="ph-bold ph-stack" aria-hidden="true"></i><span>限制与费用</span>
-        </button>
       </nav>
 
       <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换亮 / 暗主题" title="切换亮 / 暗主题">
@@ -1295,8 +1286,6 @@ html.cg-locked, html.cg-locked body{ overflow:hidden; }
 
     <div class="panel active" id="panel-carrier" role="tabpanel" aria-labelledby="tab-carrier" aria-label="卡司查询"></div>
     <div class="panel" id="panel-channel" role="tabpanel" aria-labelledby="tab-channel" aria-label="渠道资料"></div>
-
-    <div class="panel" id="panel-limits" role="tabpanel" aria-labelledby="tab-limits" aria-label="限制与费用"></div>
 
     <div class="panel" id="panel-convert" role="tabpanel" aria-labelledby="tab-convert" aria-label="尺寸重量换算">
       <div class="conv-wrap">
@@ -1466,6 +1455,42 @@ const FIELDS_FEE = [
   {key:"是否复核", label:"是否复核", group:"来源与复核", icon:"ph-check-circle", copy:true},
   {key:"规则截图", label:"规则截图", group:"来源与复核", icon:"ph-image", copy:true},
 ];
+
+// 卡司查询里的「尺寸限制 / 附加费用」关联：把承运商名归一化后映射到 DATA_DIMENSION / DATA_FEE 的原始键。
+// 数据来源 xlsx 命名与卡司主表不一致（缩写、拼写、中英文混杂），故用归一化别名表精确关联。
+function normName(s){
+  if(!s) return '';
+  return String(s)
+    .replace(/[一-龥]/g, '')        // 去中文
+    .replace(/[()]/g, ' ')          // 去括号
+    .replace(/[^A-Za-z0-9&]/g, ' ') // 标点变空格
+    .toLowerCase().replace(/\s+/g, ' ').trim();
+}
+const CARRIER_EXTRA_MAP = {
+  'aaacooper': {dim:'AAA COOPER', fee:'AAA COOPER'},
+  'abf': {dim:'ABF Freight', fee:'ABF Freight ABF货运'},
+  'abfreightlineinc': {fee:'A&B Frieght'},
+  'ceva': {fee:'Ceva Logistics'},
+  'customcompanies': {fee:'CustomCo'},
+  'daylight': {fee:'Daylight'},
+  'estes': {dim:'ESTES', fee:'Estes Express 埃斯特斯快运'},
+  'fedex': {dim:'FedEx Freight', fee:'FedEx Freight 联邦快递货运'},
+  'forwardair': {fee:'Forward Air'},
+  'leejenningstargetexpress': {fee:'Lee Jennis'},
+  'rl': {fee:'R+L Carriers R+L运输'},
+  'roadrunner': {dim:'RoadRunner Freight', fee:'ROADRUNNER'},
+  'saia': {fee:'Saia 赛亚货运'},
+  'tforce': {dim:'TForce Freight', fee:'TForce Freight TForce货运（原UPS）'},
+  'totaltransportation': {fee:'Total'},
+  'ward': {fee:'Ward'},
+  'warp': {fee:'WARP'},
+  'xpo': {dim:'XPO Logistics/xpo', fee:'XPO Logistics XPO物流'},
+  '2daytransportation': {fee:'2 Day Transportation'},
+};
+function carrierExtraMap(name){
+  const key = normName(name).replace(/\s+/g, '');
+  return CARRIER_EXTRA_MAP[key] || null;
+}
 
 function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1696,44 +1721,15 @@ function highlightMatch(name, query){
 class LookupTab{
   constructor(opts){
     this.id = opts.id;
-    if(opts.subsets && opts.subsets.length){
-      this.subsets = opts.subsets;
-      this.activeSub = 0;
-      this.applySubset(opts.subsets[0]);
-    } else {
-      this.data = opts.data;
-      this.nameKey = opts.nameKey;
-      this.filterKey = opts.filterKey;
-      this.fieldConfig = opts.fieldConfig;
-      this.badgeFn = opts.badgeFn;
-      this.subTitle = opts.subTitle || '';
-    }
+    this.data = opts.data;
+    this.nameKey = opts.nameKey;
+    this.filterKey = opts.filterKey;
+    this.fieldConfig = opts.fieldConfig;
+    this.badgeFn = opts.badgeFn;
     this.query = '';
     this.activeFilter = '全部';
     this.activeIndex = -1;
     this.filtered = [];
-    this.buildFilterOptions();
-    this.render();
-    this.bind();
-    this.applyFilters();
-  }
-
-  applySubset(s){
-    this.data = s.data;
-    this.nameKey = s.nameKey;
-    this.filterKey = s.filterKey;
-    this.fieldConfig = s.fieldConfig;
-    this.badgeFn = s.badgeFn;
-    this.subTitle = s.subTitle || '';
-  }
-
-  setSub(i){
-    if(i === this.activeSub) return;
-    this.activeSub = i;
-    this.applySubset(this.subsets[i]);
-    this.query = '';
-    this.activeFilter = '全部';
-    this.activeIndex = -1;
     this.buildFilterOptions();
     this.render();
     this.bind();
@@ -1750,12 +1746,7 @@ class LookupTab{
 
   render(){
     const panel = document.getElementById('panel-' + this.id);
-    const subSwitch = this.subsets ? `
-      <div class="sub-switch" id="sub-${this.id}">
-        ${this.subsets.map((s, i) => `<button class="sub-btn ${i === this.activeSub ? 'active' : ''}" data-sub="${i}">${escapeHtml(s.label)}</button>`).join('')}
-      </div>` : '';
     panel.innerHTML = `
-      ${subSwitch}
       <div class="search-box">
         <i class="ph ph-magnifying-glass icon-search"></i>
         <input type="text" id="search-${this.id}" placeholder="输入名称搜索..." autocomplete="off">
@@ -1816,13 +1807,6 @@ class LookupTab{
       this.filterRow.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c === btn));
       this.applyFilters();
     });
-    if(this.subsets){
-      const subEl = document.getElementById('sub-' + this.id);
-      if(subEl) subEl.addEventListener('click', e => {
-        const btn = e.target.closest('.sub-btn');
-        if(btn) this.setSub(parseInt(btn.dataset.sub));
-      });
-    }
   }
 
   scrollActiveIntoView(){
@@ -1932,15 +1916,11 @@ class LookupTab{
     if(!this.filtered.length) this.showEmptyIfNeeded();
   }
 
-  renderCard(item){
-    const name = item[this.nameKey] || '(未命名)';
-    const badge = this.badgeFn ? this.badgeFn(item) : {text:'', cls:''};
-
-    // 按 fieldConfig 出现顺序收集分组（跳过已在头部徽章显示的 filterKey 字段）
+  buildGroups(fieldConfig, item, skipKey){
     const groups = [];
     const order = [];
-    this.fieldConfig.forEach(cfg => {
-      if(!cfg.group || cfg.key === this.filterKey) return;
+    fieldConfig.forEach(cfg => {
+      if(!cfg.group || (skipKey && cfg.key === skipKey)) return;
       let g = groups[order.indexOf(cfg.group)];
       if(!g){
         g = {name:cfg.group, icon:GROUP_ICONS[cfg.group] || 'ph-folders', fields:[]};
@@ -1949,12 +1929,49 @@ class LookupTab{
       }
       g.fields.push(cfg);
     });
-
-    const groupsHtml = groups.map(g => `
+    return groups.map(g => `
       <section class="d-group">
         <div class="d-group-head"><i class="ph ${g.icon}"></i><span>${escapeHtml(g.name)}</span><span class="d-group-count">${g.fields.length}</span></div>
         <div class="d-group-body">${g.fields.map(cfg => this.fieldMarkup(cfg, item)).join('')}</div>
       </section>`).join('');
+  }
+
+  carrierExtrasHtml(item){
+    if(this.id !== 'carrier') return '';
+    const map = carrierExtraMap(item['承运商']);
+    if(!map) return '';
+    let html = '';
+    if(map.dim){
+      const rec = DATA_DIMENSION.find(o => o['承运商'] === map.dim);
+      if(rec) html += this.buildGroups(FIELDS_DIMENSION, rec, null);
+    }
+    if(map.fee){
+      const recs = DATA_FEE.filter(o => o['卡司'] === map.fee);
+      if(recs.length){
+        const cards = recs.map(rec => {
+          const title = rec['费用/规则'] || rec['费用项'] || '费用规则';
+          const fields = FIELDS_FEE.filter(f => f.key !== '卡司' && f.key !== '费用项')
+            .map(cfg => this.fieldMarkup(cfg, rec)).join('');
+          return `<div class="fee-card">
+            <div class="fee-card-title">${escapeHtml(title)}</div>
+            <div class="fee-card-body">${fields}</div>
+          </div>`;
+        }).join('');
+        html += `<section class="d-group">
+          <div class="d-group-head"><i class="ph ph-coins"></i><span>附加费用规则</span><span class="d-group-count">${recs.length}</span></div>
+          <div class="d-group-body">${cards}</div>
+        </section>`;
+      }
+    }
+    return html;
+  }
+
+  renderCard(item){
+    const name = item[this.nameKey] || '(未命名)';
+    const badge = this.badgeFn ? this.badgeFn(item) : {text:'', cls:''};
+
+    const groupsHtml = this.buildGroups(this.fieldConfig, item, this.filterKey);
+    const extrasHtml = (this.id === 'carrier') ? this.carrierExtrasHtml(item) : '';
 
     this.cardEl.innerHTML = `
       <div class="back-row"><button class="back-btn"><i class="ph ph-arrow-left"></i>返回列表</button></div>
@@ -1964,10 +1981,10 @@ class LookupTab{
             <h2>${escapeHtml(name)}</h2>
             ${badge.text ? `<span class="badge ${badge.cls}">${escapeHtml(badge.text)}</span>` : ''}
           </div>
-          <div class="ch-sub">${this.subTitle || (this.id === 'carrier' ? '承运商档案' : '渠道档案')}</div>
+          <div class="ch-sub">${this.id === 'carrier' ? '承运商档案' : '渠道档案'}</div>
         </div>
       </div>
-      <div class="d-groups">${groupsHtml}</div>
+      <div class="d-groups">${groupsHtml}${extrasHtml}</div>
     `;
     this.cardEl.classList.add('show');
     this.cardEl.querySelector('.back-btn').addEventListener('click', () => this.backToList());
@@ -2029,28 +2046,6 @@ const channelTab = new LookupTab({
     const val = (item['渠道类型']||'').trim();
     return {text: val || '未分类', cls: 'indirect'};
   }
-});
-
-const limitsTab = new LookupTab({
-  id: 'limits',
-  subsets: [
-    {
-      label: '尺寸限制',
-      subTitle: '尺寸与重量限制',
-      data: DATA_DIMENSION,
-      nameKey: '承运商',
-      filterKey: '住宅配送能力',
-      fieldConfig: FIELDS_DIMENSION,
-    },
-    {
-      label: '附加费用',
-      subTitle: '附加费用规则',
-      data: DATA_FEE,
-      nameKey: '费用项',
-      filterKey: '是否复核',
-      fieldConfig: FIELDS_FEE,
-    }
-  ]
 });
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
